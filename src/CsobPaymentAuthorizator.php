@@ -42,6 +42,7 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 	/** @var string */
 	private $tempDir;
 
+	/** @var string */
 	private $attachmentEncoding = 'windows-1250';
 
 
