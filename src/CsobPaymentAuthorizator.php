@@ -65,7 +65,6 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 	 * Download all e-mail messages from IMAP and parse content to entity.
 	 *
 	 * @return Transaction[]
-	 * @throws InvalidParameterException
 	 */
 	public function getTransactions(): array
 	{
@@ -73,7 +72,9 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 		foreach (($mailbox = $this->getMailbox())->searchMailbox('ALL') as $mailId) {
 			if (($mail = $mailbox->getMail($mailId))->hasAttachments()) {
 				foreach ($mail->getAttachments() as $attachment) {
-					$content = Strings::toAscii(Strings::normalize(Strings::fixEncoding(iconv($this->attachmentEncoding, 'UTF-8', $attachment->getContents()))));
+					if (($content = $this->convertAttachmentContent($attachment->getFileInfo(), $attachment->getContents())) === null) {
+						continue;
+					}
 					$relatedDate = null;
 					if (preg_match('/Za obdobi od:\s+(\d{2})\.(\d{2})\.(\d{4})/', $content, $dateParser)) {
 						$relatedDate = DateTime::from($dateParser[3] . '-' . $dateParser[2] . '-' . $dateParser[1]);
@@ -110,15 +111,15 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 	}
 
 
-	/**
-	 * @return Mailbox
-	 * @throws InvalidParameterException
-	 */
 	private function getMailbox(): Mailbox
 	{
 		if ($this->mailBox === null) {
 			FileSystem::createDir($this->tempDir);
-			$this->mailBox = new Mailbox($this->imapPath, $this->login, $this->password, $this->tempDir);
+			try {
+				$this->mailBox = new Mailbox($this->imapPath, $this->login, $this->password, $this->tempDir);
+			} catch (InvalidParameterException $e) {
+				throw new \InvalidArgumentException($e->getMessage(), $e->getCode(), $e);
+			}
 		}
 
 		return $this->mailBox;
@@ -128,5 +129,18 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 	private function clearTemp(): void
 	{
 		FileSystem::delete($this->tempDir);
+	}
+
+
+	private function convertAttachmentContent(string $fileInfo, string $haystack): ?string
+	{
+		if (strncmp($fileInfo, 'PDF', 3) === 0) {
+			return null;
+		}
+
+		// Convert common haystack to UTF-8
+		$utf8 = @iconv($this->attachmentEncoding, 'UTF-8', trim($haystack));
+
+		return Strings::toAscii(Strings::normalize(Strings::fixEncoding($utf8))) ?: null;
 	}
 }
