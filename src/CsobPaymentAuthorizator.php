@@ -68,42 +68,45 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 	 */
 	public function getTransactions(): array
 	{
-		$return = [];
-		foreach (($mailbox = $this->getMailbox())->searchMailbox('ALL') as $mailId) {
-			if (($mail = $mailbox->getMail($mailId))->hasAttachments()) {
-				foreach ($mail->getAttachments() as $attachment) {
-					if (($content = $this->convertAttachmentContent($attachment->getFileInfo(), $attachment->getContents())) === null) {
-						continue;
-					}
-					$relatedDate = null;
-					if (preg_match('/Za obdobi od:\s+(\d{2})\.(\d{2})\.(\d{4})/', $content, $dateParser)) {
-						$relatedDate = DateTime::from($dateParser[3] . '-' . $dateParser[2] . '-' . $dateParser[1]);
-					}
-					if (preg_match('/Mena uctu: ([A-Z]+)/', $content, $currencyParser)) {
-						$currency = $currencyParser[1];
-					} else {
-						throw new \RuntimeException('Attachment "' . $mailId . '" does not contain currency info.');
-					}
-					if (($payments = explode(str_repeat('=', 99), $content)) && isset($payments[1]) === true) {
-						foreach (explode(str_repeat('-', 99), $payments[1]) as $payment) {
-							if (preg_match('/' . self::PATTERN . '/', str_replace("\n", '[breakLine]', trim($payment)), $parser)) {
-								$return[] = new Transaction($relatedDate ?? DateTime::from('now'), $currency, $parser);
+		static $cache;
+		if ($cache === null) {
+			$return = [];
+			foreach (($mailbox = $this->getMailbox())->searchMailbox('ALL') as $mailId) {
+				if (($mail = $mailbox->getMail($mailId))->hasAttachments()) {
+					foreach ($mail->getAttachments() as $attachment) {
+						if (($content = $this->convertAttachmentContent($attachment->getFileInfo(), $attachment->getContents())) === null) {
+							continue;
+						}
+						$relatedDate = null;
+						if (preg_match('/Za obdobi od:\s+(\d{2})\.(\d{2})\.(\d{4})/', $content, $dateParser)) {
+							$relatedDate = DateTime::from($dateParser[3] . '-' . $dateParser[2] . '-' . $dateParser[1]);
+						}
+						if (preg_match('/Mena uctu: ([A-Z]+)/', $content, $currencyParser)) {
+							$currency = $currencyParser[1];
+						} else {
+							throw new \RuntimeException('Attachment "' . $mailId . '" does not contain currency info.');
+						}
+						if (($payments = explode(str_repeat('=', 99), $content)) && isset($payments[1]) === true) {
+							foreach (explode(str_repeat('-', 99), $payments[1]) as $payment) {
+								if (preg_match('/' . self::PATTERN . '/', str_replace("\n", '[breakLine]', trim($payment)), $parser)) {
+									$return[] = new Transaction($relatedDate ?? DateTime::from('now'), $currency, $parser);
+								}
 							}
 						}
 					}
 				}
 			}
+
+			$this->clearTemp();
+			$cache = $return;
 		}
 
-		$this->clearTemp();
-
-		return $return;
+		return $cache;
 	}
 
 
 	/**
 	 * @internal
-	 * @param string $attachmentEncoding
 	 */
 	public function setAttachmentEncoding(string $attachmentEncoding): void
 	{
