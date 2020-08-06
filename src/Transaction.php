@@ -47,8 +47,6 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 
 
 	/**
-	 * @param \DateTime $relatedDate
-	 * @param string $currency
 	 * @param string[] $data
 	 */
 	public function __construct(\DateTime $relatedDate, string $currency, array $data)
@@ -68,119 +66,78 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 	}
 
 
-	/**
-	 * @param int $variableSymbol
-	 * @return bool
-	 */
 	public function isVariableSymbol(int $variableSymbol): bool
 	{
 		return $this->variable === $variableSymbol || $this->isContainVariableSymbolInMessage($variableSymbol);
 	}
 
 
-	/**
-	 * @param int $variableSymbol
-	 * @return bool
-	 */
 	public function isContainVariableSymbolInMessage(int $variableSymbol): bool
 	{
 		return $this->note !== null && strpos($this->note, (string) $variableSymbol) !== false;
 	}
 
 
-	/**
-	 * @return \DateTime
-	 */
 	public function getDate(): \DateTime
 	{
 		return $this->date;
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getCurrency(): string
 	{
 		return $this->currency;
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getName(): string
 	{
 		return $this->name;
 	}
 
 
-	/**
-	 * @return string|null
-	 */
 	public function getAccountName(): ?string
 	{
 		return $this->accountName;
 	}
 
 
-	/**
-	 * @return string|null
-	 */
 	public function getAccountNumber(): ?string
 	{
 		return $this->accountNumber;
 	}
 
 
-	/**
-	 * @return int
-	 */
 	public function getSekv(): int
 	{
 		return $this->sekv;
 	}
 
 
-	/**
-	 * @return float
-	 */
 	public function getPrice(): float
 	{
 		return $this->price;
 	}
 
 
-	/**
-	 * @return int|null
-	 */
 	public function getVariable(): ?int
 	{
 		return $this->variable;
 	}
 
 
-	/**
-	 * @return string|null
-	 */
 	public function getKs(): ?string
 	{
 		return $this->ks;
 	}
 
 
-	/**
-	 * @return string|null
-	 */
 	public function getSs(): ?string
 	{
 		return $this->ss;
 	}
 
 
-	/**
-	 * @return string|null
-	 */
 	public function getNote(): ?string
 	{
 		return $this->note;
