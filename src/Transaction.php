@@ -78,6 +78,16 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 	}
 
 
+	public function getHash(): string
+	{
+		return md5(
+			$this->getVariable() . '_' . $this->getKs() . '_' . $this->getSekv() . '_' . $this->getPrice()
+			. '_' . $this->getAccountName() . '_' . $this->getAccountNumber()
+			. '_' . $this->getNote() . '_' . $this->getDate()->format('Y-m-d')
+		);
+	}
+
+
 	public function getDate(): \DateTime
 	{
 		return $this->date;
