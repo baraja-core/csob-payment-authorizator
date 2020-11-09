@@ -27,27 +27,20 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 	. '(\[breakLine\])?\s*'
 	. '(?<note>.+)?\s*';
 
-	/** @var Mailbox|null */
-	private $mailBox;
+	private ?Mailbox $mailBox = null;
 
-	/** @var string */
-	private $imapPath;
+	private string $imapPath;
 
-	/** @var string */
-	private $login;
+	private string $login;
 
-	/** @var string */
-	private $password;
+	private string $password;
 
-	/** @var string */
-	private $tempDir;
+	private string $tempDir;
 
-	/** @var string */
-	private $attachmentEncoding = 'windows-1250';
+	private string $attachmentEncoding = 'windows-1250';
 
 
 	/**
-	 * @param string $tempDir
 	 * @param string $imapPath IMAP server and mailbox folder
 	 * @param string $login Username for the before configured mailbox
 	 * @param string $password Password for the before configured username

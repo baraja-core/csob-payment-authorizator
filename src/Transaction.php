@@ -5,45 +5,31 @@ declare(strict_types=1);
 namespace Baraja\CsobPaymentChecker;
 
 
-use Nette\SmartObject;
 use Nette\Utils\DateTime;
 
 final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 {
-	use SmartObject;
+	private \DateTime $date;
 
-	/** @var \DateTime */
-	private $date;
+	private string $currency;
 
-	/** @var string */
-	private $currency;
+	private string $name;
 
-	/** @var string */
-	private $name;
+	private ?string $accountName;
 
-	/** @var string|null */
-	private $accountName;
+	private ?string $accountNumber;
 
-	/** @var string|null */
-	private $accountNumber;
+	private int $sekv;
 
-	/** @var int */
-	private $sekv;
+	private float $price;
 
-	/** @var float */
-	private $price;
+	private ?int $variable;
 
-	/** @var int|null */
-	private $variable;
+	private ?string $ks;
 
-	/** @var string|null */
-	private $ks;
+	private ?string $ss;
 
-	/** @var string|null */
-	private $ss;
-
-	/** @var string|null */
-	private $note;
+	private ?string $note;
 
 
 	/**
