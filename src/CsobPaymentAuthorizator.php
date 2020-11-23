@@ -76,8 +76,8 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 					$rules[] = ['note' => $note];
 				}
 				$rules = array_merge([], ...$rules);
-				$rules = array_map(fn(string $item) => trim($item), $rules);
-				$rules = array_filter($rules, fn($key) => is_string($key), ARRAY_FILTER_USE_KEY);
+				$rules = array_map(fn (string $item) => trim($item), $rules);
+				$rules = array_filter($rules, fn ($key) => is_string($key), ARRAY_FILTER_USE_KEY);
 
 				$return[] = new Transaction($relatedDate ?? DateTime::from('now'), $currency, $rules);
 			}
