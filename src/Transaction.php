@@ -25,9 +25,9 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 
 	private ?int $variable;
 
-	private ?string $ks;
+	private ?int $ks;
 
-	private ?string $ss;
+	private ?int $ss;
 
 	private ?string $note;
 
@@ -41,14 +41,14 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 		$this->date = DateTime::from($relatedDate->format('Y') . '-' . $month . '-' . $day);
 		$this->currency = $currency;
 		$this->name = trim($data['name']);
-		$this->accountName = trim($data['accountName']) ?: null;
+		$this->setAccountName(trim($data['accountName']) ?: null);
 		$this->accountNumber = trim($data['accountNumber']) ?: null;
 		$this->sekv = (int) trim($data['sekv']);
 		$this->price = (float) str_replace(',', '.', trim($data['price']));
-		$this->variable = (int) trim($data['variable']) ?: null;
-		$this->ks = trim($data['ks'] ?? '') ?: null;
-		$this->ss = trim($data['ss'] ?? '') ?: null;
-		$this->note = preg_replace('/(\[breakLine\]\s+)/', '', trim($data['note'] ?? '')) ?: null;
+		$this->variable = ((int) trim($data['variable'])) ?: null;
+		$this->ks = ((int) trim($data['ks'] ?? '')) ?: null;
+		$this->ss = ((int) trim($data['ss'] ?? '')) ?: null;
+		$this->note = trim($data['note'] ?? '') ?: null;
 	}
 
 
@@ -122,13 +122,13 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 	}
 
 
-	public function getKs(): ?string
+	public function getKs(): ?int
 	{
 		return $this->ks;
 	}
 
 
-	public function getSs(): ?string
+	public function getSs(): ?int
 	{
 		return $this->ss;
 	}
@@ -137,5 +137,21 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 	public function getNote(): ?string
 	{
 		return $this->note;
+	}
+
+
+	private function setAccountName(?string $name): void
+	{
+		if ($name !== null && preg_match('/^[A-Z\s]+$/', $name = trim($name))) {
+			$return = '';
+			foreach (explode(' ', $name) as $word) {
+				$return .= ($return ? ' ' : '') . ucfirst(strtolower($word));
+			}
+			$this->accountName = $return;
+
+			return;
+		}
+
+		$this->accountName = $name;
 	}
 }
