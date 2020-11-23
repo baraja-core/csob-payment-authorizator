@@ -14,19 +14,6 @@ use PhpImap\Mailbox;
 
 final class CsobPaymentAuthorizator extends BaseAuthorizator
 {
-	private const PATTERN = '(?<date>\d{2}\.\d{2}\.)\s*'
-	. '(?<name>.{31})'
-	. '(?<accountName>.{21})'
-	. '(?<sekv>.{20})'
-	. '(?<price>.{19})'
-	. '\[breakLine\]'
-	. '(?<accountNumber>.{51})'
-	. '(?<variable>.{15})'
-	. '(?<ks>[^[\s]{3,})\s*'
-	. '(?<ss>[^[\s]{1,})?\s*'
-	. '(\[breakLine\])?\s*'
-	. '(?<note>.+)?\s*';
-
 	private ?Mailbox $mailBox = null;
 
 	private string $imapPath;
@@ -55,6 +42,52 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 
 
 	/**
+	 * @return Transaction[]
+	 */
+	public static function parseTransactions(string $haystack): array
+	{
+		if (($haystack = trim(Strings::toAscii(Strings::normalize(Strings::fixEncoding($haystack))))) === '') {
+			throw new \InvalidArgumentException('Input file can not be empty.');
+		}
+		$relatedDate = null;
+		if (preg_match('/Za obdobi od:\s+(\d{2})\.(\d{2})\.(\d{4})/', $haystack, $dateParser)) {
+			$relatedDate = DateTime::from($dateParser[3] . '-' . $dateParser[2] . '-' . $dateParser[1]);
+		}
+		if (preg_match('/Mena uctu: ([A-Z]+)/', $haystack, $currencyParser)) {
+			$currency = $currencyParser[1];
+		} else {
+			throw new \InvalidArgumentException('Input does not contain currency info.');
+		}
+		$return = [];
+		if (($payments = explode(str_repeat('=', 99), $haystack)) && isset($payments[1]) === true) {
+			foreach (explode(str_repeat('-', 99), $payments[1]) as $payment) {
+				$lines = explode("\n", trim($payment));
+				if (!preg_match('/^\d{2}\.\d{2}\.\s/', $lines[0] ?? '')) {
+					continue;
+				}
+				$rules = [];
+				if (isset($lines[0]) && preg_match('/^(?<date>\d{2}\.\d{2}\.)\s* (?<name>.{31})(?<accountName>.{21})(?<sekv>.{20})(?<price>.{0,19})/', $lines[0], $basic)) {
+					$rules[] = $basic;
+				}
+				if (isset($lines[1]) && preg_match('/^(?<accountNumber>.{51})(?<variable>.{0,15})(?<ks>[^[\s]{3,})?\s*(?<ss>[^[\s]+)?\s*/', $lines[1], $account)) {
+					$rules[] = $account;
+				}
+				if (isset($lines[2]) && ($note = trim($lines[2])) !== '') {
+					$rules[] = ['note' => $note];
+				}
+				$rules = array_merge([], ...$rules);
+				$rules = array_map(fn(string $item) => trim($item), $rules);
+				$rules = array_filter($rules, fn($key) => is_string($key), ARRAY_FILTER_USE_KEY);
+
+				$return[] = new Transaction($relatedDate ?? DateTime::from('now'), $currency, $rules);
+			}
+		}
+
+		return $return;
+	}
+
+
+	/**
 	 * Download all e-mail messages from IMAP and parse content to entity.
 	 *
 	 * @return Transaction[]
@@ -70,28 +103,17 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 						if (($content = $this->convertAttachmentContent($attachment->getFileInfo(), $attachment->getContents())) === null) {
 							continue;
 						}
-						$relatedDate = null;
-						if (preg_match('/Za obdobi od:\s+(\d{2})\.(\d{2})\.(\d{4})/', $content, $dateParser)) {
-							$relatedDate = DateTime::from($dateParser[3] . '-' . $dateParser[2] . '-' . $dateParser[1]);
-						}
-						if (preg_match('/Mena uctu: ([A-Z]+)/', $content, $currencyParser)) {
-							$currency = $currencyParser[1];
-						} else {
-							throw new \RuntimeException('Attachment "' . $mailId . '" does not contain currency info.');
-						}
-						if (($payments = explode(str_repeat('=', 99), $content)) && isset($payments[1]) === true) {
-							foreach (explode(str_repeat('-', 99), $payments[1]) as $payment) {
-								if (preg_match('/' . self::PATTERN . '/', str_replace("\n", '[breakLine]', trim($payment)), $parser)) {
-									$return[] = new Transaction($relatedDate ?? DateTime::from('now'), $currency, $parser);
-								}
-							}
+						try {
+							$return[] = self::parseTransactions($content);
+						} catch (\InvalidArgumentException $e) {
+							throw new \RuntimeException('Attachment "' . $mailId . '": ' . $e->getMessage(), $e->getCode(), $e);
 						}
 					}
 				}
 			}
 
 			$this->clearTemp();
-			$cache = $return;
+			$cache = array_merge([], ...$return);
 		}
 
 		return $cache;
@@ -135,8 +157,6 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 		}
 
 		// Convert common haystack to UTF-8
-		$utf8 = @iconv($this->attachmentEncoding, 'UTF-8', trim($haystack));
-
-		return Strings::toAscii(Strings::normalize(Strings::fixEncoding($utf8))) ?: null;
+		return ((string) @iconv($this->attachmentEncoding, 'UTF-8', trim($haystack))) ?: null;
 	}
 }
