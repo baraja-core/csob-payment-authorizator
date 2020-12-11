@@ -60,8 +60,8 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 		}
 		$return = [];
 		if (($payments = explode(str_repeat('=', 99), $haystack)) && isset($payments[1]) === true) {
-			foreach (explode(str_repeat('-', 99), $payments[1]) as $payment) {
-				$lines = explode("\n", trim($payment));
+			foreach ((array) explode(str_repeat('-', 99), (string) $payments[1]) as $payment) {
+				$lines = explode("\n", trim((string) $payment));
 				if (!preg_match('/^\d{2}\.\d{2}\.\s/', $lines[0] ?? '')) {
 					continue;
 				}
