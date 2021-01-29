@@ -45,9 +45,9 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 		$this->accountNumber = trim($data['accountNumber'] ?? '') ?: null;
 		$this->sekv = (int) trim($data['sekv']);
 		$this->price = (float) str_replace(',', '.', trim($data['price']));
-		$this->variable = ((int) trim($data['variable'] ?? '')) ?: null;
-		$this->ks = ((int) trim($data['ks'] ?? '')) ?: null;
-		$this->ss = ((int) trim($data['ss'] ?? '')) ?: null;
+		$this->variable = (int) trim($data['variable'] ?? '') ?: null;
+		$this->ks = (int) trim($data['ks'] ?? '') ?: null;
+		$this->ss = (int) trim($data['ss'] ?? '') ?: null;
 		$this->note = trim($data['note'] ?? '') ?: null;
 	}
 
@@ -69,7 +69,7 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 		return md5(
 			$this->getVariable() . '_' . $this->getKs() . '_' . $this->getSekv() . '_' . $this->getPrice()
 			. '_' . $this->getAccountName() . '_' . $this->getAccountNumber()
-			. '_' . $this->getNote() . '_' . $this->getDate()->format('Y-m-d')
+			. '_' . $this->getNote() . '_' . $this->getDate()->format('Y-m-d'),
 		);
 	}
 

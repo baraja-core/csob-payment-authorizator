@@ -66,10 +66,16 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 					continue;
 				}
 				$rules = [];
-				if (isset($lines[0]) && preg_match('/^(?<date>\d{2}\.\d{2}\.)\s* (?<name>.{31})(?<accountName>.{21})(?<sekv>.{20})(?<price>.{0,19})/', $lines[0], $basic)) {
+				if (
+					isset($lines[0])
+					&& preg_match('/^(?<date>\d{2}\.\d{2}\.)\s* (?<name>.{31})(?<accountName>.{21})(?<sekv>.{20})(?<price>.{0,19})/', $lines[0], $basic)
+				) {
 					$rules[] = $basic;
 				}
-				if (isset($lines[1]) && preg_match('/^(?<accountNumber>.{51})(?<variable>.{0,15})(?<ks>[^[\s]{3,})?\s*(?<ss>[^[\s]+)?\s*/', $lines[1], $account)) {
+				if (
+					isset($lines[1])
+					&& preg_match('/^(?<accountNumber>.{51})(?<variable>.{0,15})(?<ks>[^[\s]{3,})?\s*(?<ss>[^[\s]+)?\s*/', $lines[1], $account)
+				) {
 					$rules[] = $account;
 				}
 				if (isset($lines[2]) && ($note = trim($lines[2])) !== '') {
@@ -157,6 +163,6 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 		}
 
 		// Convert common haystack to UTF-8
-		return ((string) @iconv($this->attachmentEncoding, 'UTF-8', trim($haystack))) ?: null;
+		return (string) @iconv($this->attachmentEncoding, 'UTF-8', trim($haystack)) ?: null;
 	}
 }
