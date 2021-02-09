@@ -11,7 +11,7 @@
 	"require": {
 		"php": "^8.0",
 		"baraja-core/bank-transaction-authorizator": "^1.0",
-		"php-imap/php-imap": "^3.0 || ^4.0"
+		"php-imap/php-imap": "^4.1"
 	},
 	"require-dev": {
 		"phpstan/phpstan": "^0.12.74",

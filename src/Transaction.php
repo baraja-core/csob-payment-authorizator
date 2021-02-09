@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace Baraja\CsobPaymentChecker;
 
 
-use Nette\Utils\DateTime;
-
 final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 {
-	private \DateTime $date;
+	private \DateTimeImmutable $date;
 
 	private string $currency;
 
@@ -35,10 +33,10 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 	/**
 	 * @param string[] $data
 	 */
-	public function __construct(\DateTime $relatedDate, string $currency, array $data)
+	public function __construct(\DateTimeInterface $relatedDate, string $currency, array $data)
 	{
 		[$day, $month] = explode('.', trim($data['date']));
-		$this->date = DateTime::from($relatedDate->format('Y') . '-' . $month . '-' . $day);
+		$this->date = new \DateTimeImmutable($relatedDate->format('Y') . '-' . $month . '-' . $day);
 		$this->currency = $currency;
 		$this->name = trim($data['name']);
 		$this->setAccountName(trim($data['accountName'] ?? '') ?: null);
@@ -52,15 +50,15 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 	}
 
 
-	public function isVariableSymbol(int $variableSymbol): bool
+	public function isVariableSymbol(int $vs): bool
 	{
-		return $this->variable === $variableSymbol || $this->isContainVariableSymbolInMessage($variableSymbol);
+		return $this->variable === $vs || $this->isContainVariableSymbolInMessage($vs);
 	}
 
 
-	public function isContainVariableSymbolInMessage(int $variableSymbol): bool
+	public function isContainVariableSymbolInMessage(int|string $vs): bool
 	{
-		return $this->note !== null && strpos($this->note, (string) $variableSymbol) !== false;
+		return $this->note !== null && str_contains($this->note, (string) $vs);
 	}
 
 
@@ -74,7 +72,7 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 	}
 
 
-	public function getDate(): \DateTime
+	public function getDate(): \DateTimeImmutable
 	{
 		return $this->date;
 	}

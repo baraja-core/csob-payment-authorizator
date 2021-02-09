@@ -6,7 +6,6 @@ namespace Baraja\CsobPaymentChecker;
 
 
 use Baraja\BankTransferAuthorizator\BaseAuthorizator;
-use Nette\Utils\DateTime;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Strings;
 use PhpImap\Exceptions\InvalidParameterException;
@@ -51,7 +50,7 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 		}
 		$relatedDate = null;
 		if (preg_match('/Za obdobi od:\s+(\d{2})\.(\d{2})\.(\d{4})/', $haystack, $dateParser)) {
-			$relatedDate = DateTime::from($dateParser[3] . '-' . $dateParser[2] . '-' . $dateParser[1]);
+			$relatedDate = new \DateTimeImmutable($dateParser[3] . '-' . $dateParser[2] . '-' . $dateParser[1]);
 		}
 		if (preg_match('/Mena uctu: ([A-Z]+)/', $haystack, $currencyParser)) {
 			$currency = $currencyParser[1];
@@ -82,10 +81,10 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 					$rules[] = ['note' => $note];
 				}
 				$rules = array_merge([], ...$rules);
-				$rules = array_map(fn (string $item) => trim($item), $rules);
-				$rules = array_filter($rules, fn ($key) => is_string($key), ARRAY_FILTER_USE_KEY);
+				$rules = array_map(static fn (string $item) => trim($item), $rules);
+				$rules = array_filter($rules, static fn ($key) => is_string($key), ARRAY_FILTER_USE_KEY);
 
-				$return[] = new Transaction($relatedDate ?? DateTime::from('now'), $currency, $rules);
+				$return[] = new Transaction($relatedDate ?? new \DateTimeImmutable('now'), $currency, $rules);
 			}
 		}
 
