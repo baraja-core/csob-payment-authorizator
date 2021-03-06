@@ -6,6 +6,7 @@ namespace Baraja\CsobPaymentChecker;
 
 
 use Baraja\BankTransferAuthorizator\BaseAuthorizator;
+use Baraja\PathResolvers\Resolvers\TempDirResolver;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Strings;
 use PhpImap\Exceptions\InvalidParameterException;
@@ -14,12 +15,6 @@ use PhpImap\Mailbox;
 final class CsobPaymentAuthorizator extends BaseAuthorizator
 {
 	private ?Mailbox $mailBox = null;
-
-	private string $imapPath;
-
-	private string $login;
-
-	private string $password;
 
 	private string $tempDir;
 
@@ -31,12 +26,13 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 	 * @param string $login Username for the before configured mailbox
 	 * @param string $password Password for the before configured username
 	 */
-	public function __construct(string $tempDir, string $imapPath, string $login, string $password)
-	{
-		$this->imapPath = $imapPath;
-		$this->login = $login;
-		$this->password = $password;
-		$this->tempDir = $tempDir . '/csob-payment-checker';
+	public function __construct(
+		TempDirResolver $tempDirResolver,
+		private string $imapPath,
+		private string $login,
+		private string $password
+	) {
+		$this->tempDir = $tempDirResolver->get('/csob-payment-checker');
 	}
 
 
