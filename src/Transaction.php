@@ -31,7 +31,7 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 
 
 	/**
-	 * @param string[] $data
+	 * @param array<string, string|null> $data
 	 */
 	public function __construct(\DateTimeInterface $relatedDate, string $currency, array $data)
 	{
@@ -140,7 +140,7 @@ final class Transaction implements \Baraja\BankTransferAuthorizator\Transaction
 
 	private function setAccountName(?string $name): void
 	{
-		if ($name !== null && preg_match('/^[A-Z\s]+$/', $name = trim($name))) {
+		if ($name !== null && preg_match('/^[A-Z\s]+$/', $name = trim($name)) === 1) {
 			$return = '';
 			foreach (explode(' ', $name) as $word) {
 				$return .= ($return ? ' ' : '') . ucfirst(strtolower($word));

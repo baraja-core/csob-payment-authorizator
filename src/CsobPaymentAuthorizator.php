@@ -41,35 +41,38 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 	 */
 	public static function parseTransactions(string $haystack): array
 	{
-		if (($haystack = trim(Strings::toAscii(Strings::normalize(Strings::fixEncoding($haystack))))) === '') {
+		$haystack = trim(Strings::toAscii(Strings::normalize(Strings::fixEncoding($haystack))));
+		if ($haystack === '') {
 			throw new \InvalidArgumentException('Input file can not be empty.');
 		}
 		$relatedDate = null;
-		if (preg_match('/Za obdobi od:\s+(\d{2})\.(\d{2})\.(\d{4})/', $haystack, $dateParser)) {
+		if (preg_match('/Za obdobi od:\s+(\d{2})\.(\d{2})\.(\d{4})/', $haystack, $dateParser) === 1) {
 			$relatedDate = new \DateTimeImmutable($dateParser[3] . '-' . $dateParser[2] . '-' . $dateParser[1]);
 		}
-		if (preg_match('/Mena uctu: ([A-Z]+)/', $haystack, $currencyParser)) {
+		if (preg_match('/Mena uctu: ([A-Z]+)/', $haystack, $currencyParser) === 1) {
 			$currency = $currencyParser[1];
 		} else {
 			throw new \InvalidArgumentException('Input does not contain currency info.');
 		}
+		$payments = explode(str_repeat('=', 99), $haystack);
 		$return = [];
-		if (($payments = explode(str_repeat('=', 99), $haystack)) && isset($payments[1]) === true) {
-			foreach ((array) explode(str_repeat('-', 99), (string) $payments[1]) as $payment) {
-				$lines = explode("\n", trim((string) $payment));
-				if (!preg_match('/^\d{2}\.\d{2}\.\s/', $lines[0] ?? '')) {
+		if (isset($payments[1]) === true) {
+			$paymentParts = explode(str_repeat('-', 99), $payments[1]);
+			foreach ($paymentParts as $payment) {
+				$lines = explode("\n", trim($payment));
+				if (preg_match('/^\d{2}\.\d{2}\.\s/', $lines[0] ?? '') !== 1) {
 					continue;
 				}
 				$rules = [];
 				if (
 					isset($lines[0])
-					&& preg_match('/^(?<date>\d{2}\.\d{2}\.)\s* (?<name>.{31})(?<accountName>.{21})(?<sekv>.{20})(?<price>.{0,19})/', $lines[0], $basic)
+					&& preg_match('/^(?<date>\d{2}\.\d{2}\.)\s* (?<name>.{31})(?<accountName>.{21})(?<sekv>.{20})(?<price>.{0,19})/', $lines[0], $basic) === 1
 				) {
 					$rules[] = $basic;
 				}
 				if (
 					isset($lines[1])
-					&& preg_match('/^(?<accountNumber>.{51})(?<variable>.{0,15})(?<ks>[^[\s]{3,})?\s*(?<ss>[^[\s]+)?\s*/', $lines[1], $account)
+					&& preg_match('/^(?<accountNumber>.{51})(?<variable>.{0,15})(?<ks>[^[\s]{3,})?\s*(?<ss>[^[\s]+)?\s*/', $lines[1], $account) === 1
 				) {
 					$rules[] = $account;
 				}
@@ -77,8 +80,8 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 					$rules[] = ['note' => $note];
 				}
 				$rules = array_merge([], ...$rules);
-				$rules = array_map(static fn(string $item) => trim($item), $rules);
-				$rules = array_filter($rules, static fn($key) => is_string($key), ARRAY_FILTER_USE_KEY);
+				$rules = array_map(static fn(string $item): string => trim($item), $rules);
+				$rules = array_filter($rules, static fn($key): bool => is_string($key), ARRAY_FILTER_USE_KEY);
 
 				$return[] = new Transaction($relatedDate ?? new \DateTimeImmutable('now'), $currency, $rules);
 			}
@@ -98,16 +101,19 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 		static $cache;
 		if ($cache === null) {
 			$return = [];
-			foreach (($mailbox = $this->getMailbox())->searchMailbox('ALL') as $mailId) {
-				if (($mail = $mailbox->getMail($mailId))->hasAttachments()) {
+			$mailbox = $this->getMailbox();
+			foreach ($mailbox->searchMailbox('ALL') as $mailId) {
+				$mail = $mailbox->getMail($mailId);
+				if ($mail->hasAttachments()) {
 					foreach ($mail->getAttachments() as $attachment) {
-						if (($content = $this->convertAttachmentContent($attachment->getFileInfo(), $attachment->getContents())) === null) {
+						$content = $this->convertAttachmentContent($attachment->getFileInfo(), $attachment->getContents());
+						if ($content === null) {
 							continue;
 						}
 						try {
 							$return[] = self::parseTransactions($content);
 						} catch (\InvalidArgumentException $e) {
-							throw new \RuntimeException('Attachment "' . $mailId . '": ' . $e->getMessage(), $e->getCode(), $e);
+							throw new \RuntimeException(sprintf('Attachment "%s": %s', $mailId, $e->getMessage()), $e->getCode(), $e);
 						}
 					}
 				}
@@ -153,7 +159,7 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 
 	private function convertAttachmentContent(string $fileInfo, string $haystack): ?string
 	{
-		if (strncmp($fileInfo, 'PDF', 3) === 0) {
+		if (str_starts_with($fileInfo, 'PDF')) {
 			return null;
 		}
 
