@@ -30,7 +30,7 @@ final class CsobPaymentAuthorizator extends BaseAuthorizator
 		TempDirResolver $tempDirResolver,
 		private string $imapPath,
 		private string $login,
-		private string $password
+		private string $password,
 	) {
 		$this->tempDir = $tempDirResolver->get('/csob-payment-checker');
 	}
